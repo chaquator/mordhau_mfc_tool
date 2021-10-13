@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv'
 import { rcon_parser } from './rcon_parser/rcon_parser'
+import { game_parser } from './game_parser/game_parser'
 import { Rcon } from './rcon/rcon'
 
 async function main() {
@@ -26,13 +27,21 @@ async function main() {
 
     await rcon.connect();
 
-    const p = new rcon_parser(rcon);
-    p.on("matchstate", (map, gm) => {
-        console.log(`Map: ${map}, Gamemode: ${gm}`);
+    const rcon_p = new rcon_parser(rcon);
+    rcon_p.on("matchstate", (map, gm) => {
+        console.log(`map: ${map} gamemode: ${gm}`);
     });
-    p.on("scorefeed", (team, score) => {
-        console.log(`Team ${team} score ${score}`);
+    rcon_p.on("scorefeed", (team, score) => {
+        console.log(`team ${team} score ${score}`);
     });
+    const reg = rcon_p.register();
+    if (!reg) {
+        console.warn("failed to register");
+    }
+
+    // const game_p = new game_parser(rcon_p);
 }
+
+// TODO: test rcon parser before continuing with game parser
 
 main().catch(console.error);
