@@ -38,7 +38,7 @@ export class rcon_parser {
      * parses match state from input data
      * assumes data is correct for now
      */
-    private static parseMatchState(data: string): match_state {
+    private static parseGameInfo(data: string): match_state {
         const obj = Object.fromEntries(
             data.split("\n")
                 .filter(line => line.length > 1)
@@ -85,7 +85,6 @@ export class rcon_parser {
      */
     public deregister() {
         if (this.rcon.authenticated) {
-            // TODO: .then
             this.rcon.send("listen allof").then((res: string) => {
                 if (res != "Console: No longer listening to any broadcast channels\n") {
                     // TODO: logging
@@ -109,9 +108,9 @@ export class rcon_parser {
     /**
      * gets match state info in object
      */
-    public async getMatchState() {
+    public async getGameInfo() {
         return this.rcon.send("info")
-            .then(rcon_parser.parseMatchState);
+            .then(rcon_parser.parseGameInfo);
     }
 
     /**
@@ -119,7 +118,7 @@ export class rcon_parser {
      */
     private handlePayload(payload: string) {
         if (payload.startsWith("MatchState: Waiting")) {
-            this.getMatchState()
+            this.getGameInfo()
                 .then((state: match_state) => this.emitter.emit("matchstate", state.Map, state.GameMode));
         } else if (payload.startsWith("Scorefeed")) {
             const reg = /Scorefeed: [\d\.-]+: Team (?<team>\d)\'s is now (?<cur_score>\d+)\.\d points from (?<prev_score>\d+)*/;

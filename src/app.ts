@@ -14,6 +14,10 @@ async function main() {
     const host: string = process.env.MORDHAU_RCON_HOST ?? "";
     const port: number = parseInt(process.env.MORDHAU_RCON_PORT ?? "");
     const password: string = process.env.MORDHAU_RCON_PASSWORD ?? "";
+
+    const red_team: string = process.env.MORDHAU_RED_TEAM_NAME ?? "";
+    const blue_team: string = process.env.MORDHAU_BLUE_TEAM_NAME ?? "";
+
     const rcon = new Rcon({
         host: host,
         port: port,
@@ -28,20 +32,19 @@ async function main() {
     await rcon.connect();
 
     const rcon_p = new rcon_parser(rcon);
-    rcon_p.on("matchstate", (map, gm) => {
-        console.log(`map: ${map} gamemode: ${gm}`);
-    });
-    rcon_p.on("scorefeed", (team, score) => {
-        console.log(`team ${team} score ${score}`);
-    });
     const reg = rcon_p.register();
     if (!reg) {
         console.warn("failed to register");
     }
 
-    // const game_p = new game_parser(rcon_p);
+    const game_p = new game_parser(rcon_p);
+    game_p.cur_state.red_team = red_team;
+    game_p.cur_state.blue_team = blue_team;
+    await game_p.register();
 }
 
-// TODO: test rcon parser before continuing with game parser
+// TODO: interface for mock rcon class for testing with real data logs
+// TODO: factory function from game parser to construct whole package
+// TODO: expose game state with express route
 
 main().catch(console.error);
