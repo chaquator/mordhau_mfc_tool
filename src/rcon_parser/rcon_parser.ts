@@ -3,9 +3,17 @@
 // currently supported:
 // matchstate, scorefeed
 
-import { Rcon } from '../rcon/rcon'
+import { Events } from '../rcon/rcon'
 import { EventEmitter } from 'events'
 import TypedEmitter from 'typed-emitter'
+
+interface IRcon {
+    authenticated: boolean;
+    send: (_: string) => Promise<string>;
+    on: <E extends keyof Events>(event: E, listener: Events[E]) => TypedEmitter<Events>;
+    off: <E extends keyof Events>(event: E, listener: Events[E]) => TypedEmitter<Events>;
+    connect: () => Promise<IRcon>;
+}
 
 interface events {
     matchstate: (map_name: string, gamemode: string) => void,
@@ -18,7 +26,7 @@ export interface match_state {
 };
 
 export class rcon_parser {
-    readonly rcon: Rcon;
+    readonly rcon: IRcon;
     readonly emitter = new EventEmitter() as TypedEmitter<events>;
 
     private registered = false;
@@ -30,7 +38,7 @@ export class rcon_parser {
     removeListener = this.emitter.removeListener.bind(this.emitter);
     removeAllListeners = this.emitter.removeAllListeners.bind(this.emitter);
 
-    constructor(rcon: Rcon) {
+    constructor(rcon: IRcon) {
         this.rcon = rcon;
     }
 
@@ -48,6 +56,7 @@ export class rcon_parser {
         if (!obj.Map || !obj.GameMode) {
             // TODO: logging, error handling
             console.warn("missing properties");
+            console.log(obj);
         }
 
         return obj;
@@ -103,6 +112,11 @@ export class rcon_parser {
             }
         }
         this.registered = false;
+    }
+
+    public async setup() {
+        await this.rcon.connect();
+        this.register();
     }
 
     /**

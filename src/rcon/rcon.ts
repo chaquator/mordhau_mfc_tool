@@ -30,7 +30,7 @@ const defaultOptions = {
     maxPending: 1,
 };
 
-interface Events {
+export interface Events {
     connect: () => void;
     authenticated: () => void;
     broadcast: (data: string) => void;

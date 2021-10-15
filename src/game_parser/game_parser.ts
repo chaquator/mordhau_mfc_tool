@@ -1,17 +1,10 @@
 import { rcon_parser, match_state } from '../rcon_parser/rcon_parser'
+import { Rcon, RconOptions } from '../rcon/rcon'
 
 export enum gamemode {
     skirmish,
     hardpoint,
     other
-}
-
-export interface game_state {
-    red_team: string;
-    blue_team: string;
-    red_score: number;
-    blue_score: number;
-    gamemode: gamemode;
 }
 
 const points_win_game = {
@@ -20,42 +13,58 @@ const points_win_game = {
     [gamemode.other]: 0
 };
 
+export interface game_state {
+    red_team: string;
+    blue_team: string;
+    red_score: number;
+    blue_score: number;
+}
+
 export class game_parser {
-    rcon: rcon_parser;
+    rcon_parser: rcon_parser;
 
     cur_state: game_state = {
         red_team: "",
         blue_team: "",
         red_score: 0,
         blue_score: 0,
-        gamemode: gamemode.other
     };
+    cur_gamemode: gamemode = gamemode.other;
 
     score_win_set: number = 3;
 
     constructor(rcon_parser: rcon_parser) {
-        this.rcon = rcon_parser;
+        this.rcon_parser = rcon_parser;
     }
 
-    public async register() {
-        this.rcon.on("scorefeed", (team: number, score: number) => this.handle_scorefeed(team, score));
-        this.rcon.on("matchstate",
+    public register() {
+        this.rcon_parser.on("scorefeed", (team: number, score: number) => this.handle_scorefeed(team, score));
+        this.rcon_parser.on("matchstate",
             (map_name: string, gamemode: string) => this.handle_matchstate(map_name, gamemode));
 
-        this.rcon.getGameInfo()
+        this.rcon_parser.getGameInfo()
             .then((state: match_state) => this.handle_matchstate(state.Map, state.GameMode));
     }
 
-    public deregsiter() {
+    public deregister() {
         // TODO
     }
 
+    public setup() {
+        this.rcon_parser.setup().then(() => {
+            this.register();
+        });
+        return this;
+    }
+
     private handle_scorefeed(team: number, score: number) {
-        if (this.cur_state.gamemode != gamemode.other) {
-            const points = points_win_game[this.cur_state.gamemode];
+        if (this.cur_gamemode != gamemode.other) {
+            const points = points_win_game[this.cur_gamemode];
             if (score >= points) {
                 const team_score = team == 0 ? "red_score" : "blue_score";
-                ++this.cur_state[team_score];
+                if (this.cur_state[team_score] < this.score_win_set) {
+                    ++this.cur_state[team_score];
+                }
             }
         }
     }
@@ -63,13 +72,17 @@ export class game_parser {
     private handle_matchstate(map_name: string, gamemode_string: string) {
         // determine gamemode
         if (gamemode_string == "Skirmish") {
-            this.cur_state.gamemode = gamemode.skirmish;
+            this.cur_gamemode = gamemode.skirmish;
         } else {
             if (gamemode_string == "Team Deathmatch" && map_name != "Moshpit") {
-                this.cur_state.gamemode = gamemode.hardpoint;
+                this.cur_gamemode = gamemode.hardpoint;
             } else {
-                this.cur_state.gamemode = gamemode.other;
+                this.cur_gamemode = gamemode.other;
             }
         }
+    }
+
+    public static make_game_parser(rcon_options: RconOptions) {
+        return new game_parser(new rcon_parser(new Rcon(rcon_options)));
     }
 }
