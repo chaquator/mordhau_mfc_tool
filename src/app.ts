@@ -15,19 +15,29 @@ const rcon_password: string = process.env.MORDHAU_RCON_PASSWORD ?? "";
 const red_team: string = process.env.MORDHAU_RED_TEAM_NAME ?? "";
 const blue_team: string = process.env.MORDHAU_BLUE_TEAM_NAME ?? "";
 
+const red_score: number = parseInt(process.env.MORDHAU_RED_TEAM_SCORE ?? "0");
+const blue_score: number = parseInt(process.env.MORDHAU_RED_TEAM_SCORE ?? "0");
+
+const score_win_set: number = parseInt(process.env.MORDHAU_SCORE_WIN_SET ?? "3");
+
 const express_port: number = parseInt(process.env.EXPRESS_PORT ?? "8080");
 
-const game = game_driver.make_game_driver({
-    host: rcon_host,
-    port: rcon_port,
-    password: rcon_password,
-    timeout: 30000
-}).setup();
-game.cur_state.red_team = red_team;
-game.cur_state.blue_team = blue_team;
+const game = game_driver.make_game_driver(
+    {
+        red_team: red_team,
+        blue_team: blue_team,
+        red_score: red_score,
+        blue_score: blue_score,
+        score_win_set: score_win_set
+    },
+    {
+        host: rcon_host,
+        port: rcon_port,
+        password: rcon_password,
+        timeout: 30000
+    }).setup();
 
 const app = express().use(cors());
-app.use(cors());
 app.get("/data", (_, res) => {
     res.json({
         show_hud: true,
@@ -38,7 +48,9 @@ app.get("/data", (_, res) => {
 app.listen(express_port);
 
 // TODO: logging setup
-// TODO: try to export all rcon messages to log file
+// TODO: try to export all rcon broadcasts to log file
 // TODO: mock rcon class for testing with real data logs
-// TODO: set starting score with env vars
 // TODO: teardown method for all classes
+// TODO: change json output to include gamemode and current match score
+// TODO: more comments in code
+// TODO: remove dotenv from code and use "-r dotenv/config"

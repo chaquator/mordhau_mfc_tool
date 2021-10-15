@@ -20,6 +20,26 @@ export interface game_state {
     blue_score: number;
 }
 
+export interface game_driver_options {
+    red_team: string;
+    blue_team: string;
+
+    red_score?: number;
+    blue_score?: number;
+
+    score_win_set?: number;
+}
+
+const default_opts: Required<game_driver_options> = {
+    red_team: "",
+    blue_team: "",
+
+    red_score: 0,
+    blue_score: 0,
+
+    score_win_set: 3
+};
+
 export class game_driver {
     rcon_parser: rcon_parser;
 
@@ -33,7 +53,12 @@ export class game_driver {
 
     score_win_set: number = 3;
 
-    constructor(rcon_parser: rcon_parser) {
+    constructor(options: game_driver_options, rcon_parser: rcon_parser) {
+        const opts: Required<game_driver_options> = { ...default_opts, ...options };
+        this.score_win_set = opts.score_win_set;
+        this.cur_state.red_score = opts.red_score;
+        this.cur_state.blue_score = opts.blue_score;
+
         this.rcon_parser = rcon_parser;
     }
 
@@ -51,9 +76,7 @@ export class game_driver {
     }
 
     public setup() {
-        this.rcon_parser.setup().then(() => {
-            this.register();
-        });
+        this.rcon_parser.setup().then(() => this.register());
         return this;
     }
 
@@ -82,7 +105,7 @@ export class game_driver {
         }
     }
 
-    public static make_game_driver(rcon_options: RconOptions) {
-        return new game_driver(new rcon_parser(new Rcon(rcon_options)));
+    public static make_game_driver(game_driver_options: game_driver_options, rcon_options: RconOptions) {
+        return new game_driver(game_driver_options, new rcon_parser(new Rcon(rcon_options)));
     }
 }
