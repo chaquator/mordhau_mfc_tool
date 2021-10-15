@@ -20,7 +20,7 @@ export interface game_state {
     blue_score: number;
 }
 
-export class game_parser {
+export class game_driver {
     rcon_parser: rcon_parser;
 
     cur_state: game_state = {
@@ -82,7 +82,7 @@ export class game_parser {
         }
     }
 
-    public static make_game_parser(rcon_options: RconOptions) {
-        return new game_parser(new rcon_parser(new Rcon(rcon_options)));
+    public static make_game_driver(rcon_options: RconOptions) {
+        return new game_driver(new rcon_parser(new Rcon(rcon_options)));
     }
 }
